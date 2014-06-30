@@ -1,0 +1,3 @@
+[submodule "Vendor/CFPropertyList"]
+	path = Vendor/CFPropertyList
+	url = https://github.com/rodneyrehm/CFPropertyList.git

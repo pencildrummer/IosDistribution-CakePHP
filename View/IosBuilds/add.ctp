@@ -5,10 +5,8 @@
 	<?php
 		echo $this->Form->input('title');
 		echo $this->Form->input('subtitle');
+		echo $this->Form->input('ipa_filename', array('type' => 'file'));
 		echo $this->Form->input('plist_url');
-		echo $this->Form->input('ipa_filename');
-		echo $this->Form->input('bundle_identifier');
-		echo $this->Form->input('bundle_version');
 	?>
 	</fieldset>
 <?php echo $this->Form->end(__('Submit')); ?>
