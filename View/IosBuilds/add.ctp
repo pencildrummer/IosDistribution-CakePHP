@@ -1,11 +1,11 @@
 <div class="iosBuilds form">
-<?php echo $this->Form->create('IosBuild'); ?>
+<?php echo $this->Form->create('IosBuild', array('type' => 'file')); ?>
 	<fieldset>
 		<legend><?php echo __('Add Ios Build'); ?></legend>
 	<?php
 		echo $this->Form->input('title');
 		echo $this->Form->input('subtitle');
-		echo $this->Form->input('ipa_filename', array('type' => 'file'));
+		echo $this->Form->file('ipa_file');
 		echo $this->Form->input('plist_url');
 	?>
 	</fieldset>
