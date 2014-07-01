@@ -38,7 +38,9 @@ class IosBuildsController extends IosDistributionAppController {
 			throw new NotFoundException(__('Invalid ios build'));
 		}
 		$options = array('conditions' => array('IosBuild.' . $this->IosBuild->primaryKey => $id));
-		$this->set('iosBuild', $this->IosBuild->find('first', $options));
+		$build = $this->IosBuild->find('first', $options);
+		$build['IosBuild']['profiles'] = $this->IosBuild->checkProfile($build);
+		$this->set('iosBuild', $build);
 	}
 
 /**
@@ -102,5 +104,29 @@ class IosBuildsController extends IosDistributionAppController {
 		}
 		return $this->redirect(array('action' => 'index'));
 	}
+	
+/**
+ * download method
+ *
+ *
+ */
+ 	public function download($token = null) {
+ 		$build = $this->IosBuild->findByToken($token);
+ 		
+	 	$this->response->file($this->IosBuild->ipaPath());
+	 	return $this->response;	 	
+ 	}
+
+/**
+ * manifest method
+ *
+ *
+ */ 	
+ 	public function manifest($token = null) {
+ 		$build = $this->IosBuild->findByToken($token);
+
+	 	$this->response->file($this->IosBuild->manifestPath($build));
+	 	return $this->response;
+ 	}
 	
 }
