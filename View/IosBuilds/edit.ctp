@@ -7,7 +7,6 @@
 		echo $this->Form->input('title');
 		echo $this->Form->input('subtitle');
 		echo $this->Form->input('plist_url');
-		echo $this->Form->input('ipa_filename');
 	?>
 	</fieldset>
 <?php echo $this->Form->end(__('Submit')); ?>
