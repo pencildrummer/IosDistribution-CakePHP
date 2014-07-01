@@ -7,6 +7,11 @@
 		echo $this->Form->input('subtitle');
 		echo $this->Form->file('ipa_file');
 		echo $this->Form->input('plist_url');
+		echo $this->Dropbox->chooser(array(
+			'target' => 'IosBuildPlistUrl'
+		));
+		
+		echo $this->Dropbox->scripts(null, array('inline' => false));
 	?>
 	</fieldset>
 <?php echo $this->Form->end(__('Submit')); ?>
