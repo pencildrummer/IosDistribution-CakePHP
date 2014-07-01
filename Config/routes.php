@@ -1,3 +1,21 @@
 <?php
 
-//Router::connect('/ios_distribution', array('plugin' => 'iosdistribution', 'controller' => 'iosdistribution', 'action' => 'index'));
+	Router::connect('/ios/manifest/:token', array(
+		'plugin' => 'ios_distribution',
+		'controller' => 'ios_builds',
+		'action' => 'manifest'
+	), array(
+		'pass' => array(
+			'token'
+		)
+	));
+	
+	Router::connect('/ios/download/:token', array(
+		'plugin' => 'ios_distribution',
+		'controller' => 'ios_builds',
+		'action' => 'download'
+	), array(
+		'pass' => array(
+			'token'
+		)
+	));
