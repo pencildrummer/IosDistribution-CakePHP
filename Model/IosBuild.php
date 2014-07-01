@@ -46,10 +46,16 @@ class IosBuild extends IOSDistributionAppModel {
  
  	public function beforeSave($options = array()) {
 	 	
+	 	$this->read();
+	 	
+	 	// Create token
+	 	
+	 	$this->data[$this->alias]['token'] = String::uuid();
+	 	
 	 	// Copy IPA
 	 	/// TODO - Async request
 	 	
-	 	if ($this->data[$this->alias]['ipa_file']['error'] == UPLOAD_ERR_OK) {
+	 	if (!empty($this->data[$this->alias]['ipa_file']) && $this->data[$this->alias]['ipa_file']['error'] == UPLOAD_ERR_OK) {
 		 	
 		 	$ipaTemp = $this->data[$this->alias]['ipa_file']['tmp_name'];
 		 	
@@ -60,8 +66,11 @@ class IosBuild extends IOSDistributionAppModel {
 			 	$this->readMetadata($ipaTempPath);
 			 	$this->data[$this->alias]['ipa_filename'] = $this->data[$this->alias]['app_name'] . '.ipa';
 			 	
-			 	$folder = new Folder(App::pluginPath('IosDistribution') . 'files' . DS . $this->data[$this->alias]['bundle_identifier'], true);
-			 	$ipaFile->copy($folder->path . DS . $this->data[$this->alias]['ipa_filename']);
+			 	// Copy build to app folder
+			 	
+			 	$ipaPath = $this->ipaPath();
+			 	$folder = new Folder(dirname($ipaPath), true);
+			 	$ipaFile->copy($ipaPath);
 			 	
 			 	unlink($ipaTempPath);
 			 	
@@ -70,24 +79,14 @@ class IosBuild extends IOSDistributionAppModel {
 		 	
 	 	}
 	 	
-	 	
- 		/**/
-	 	
-	 	debug($this->data);
-	 	
- 	}
-	
-	public function afterSave($created, $options = array()) {
-		
-		// Create plist manifest if not provided
-		
-		if (empty($this->data[$this->alias]['plist_url'])) {
+	 	if (empty($this->data[$this->alias]['plist_url'])) {
 			
 			$this->generateManifest();
-			
+				
+			$this->data[$this->alias]['plist_url'] = $this->manifestUrl();
 		}
-		
-	}
+	 	
+ 	}
 	
 	public function beforeDelete($cascade = true) {
 		
@@ -97,12 +96,36 @@ class IosBuild extends IOSDistributionAppModel {
 	
 	public function afterDelete() {
 		
-		$plistFile = new File($this->manifestPath());
-		if ($plistFile->exists()) {
-			$plistFile->delete();
-		}
+		App::uses('Folder', 'Utility');
+		$folder = new Folder($this->basePath());
+		$folder->delete();
 		
 	}
+	
+/*
+ * Check provision profiles
+ *
+ */
+
+ 	public function checkProfile($data = null) {
+	 	
+	 	if (empty($data)) $data = $this->data;
+	 	
+	 	$companyIdentifier = pathinfo($data[$this->alias]['bundle_identifier'], PATHINFO_FILENAME);
+	 	$profiles = array();
+	 	
+	 	foreach (glob($this->basePath($data).'*.mobileprovision') as $profile) {
+		 	$contents = file_get_contents($profile);
+		 	$search = strstr($contents, $companyIdentifier);
+		 	$seek = strpos($search, "</string>");
+			if ($seek!== false)
+				$profiles[substr($search, 0, $seek)] = basename($profile);
+	 	}
+	 	
+	 	if (empty($profiles)) return false;
+	 	return $profiles;
+	 	
+ 	}
 
 /*
  * Plist generation
@@ -111,50 +134,63 @@ class IosBuild extends IOSDistributionAppModel {
 
 	private function generateManifest($data = null) {
 		
-		//$ipa_url = Router::fullBaseUrl() . '/' . Inflector::underscore($this->plugin) . '/files/ipas/' . $this->ipaFilename();
+		if (empty($data)) $data = $this->data;
 		
 		$plistView = new View();
 		$plistView->set($this->data[$this->alias]);
-		$plistView->set('ipa_url', $this->ipaUrl);
+		$plistView->set('ipa_url', $this->ipaUrl());
 		
 		$plistViewRender = $plistView->render('IosDistribution.IosBuilds/plistFile', false);
 		$plistFile = new File($this->manifestPath(), true);
 		
-		if ($plistFile->write($plistViewRender)) {
-			
-			$plistUrl = Router::fullBaseUrl() . '/' . 'download_build' . '/' . pathinfo($this->manifestPath(), PATHINFO_BASENAME);
-			
-			$this->saveField('plist_url', $plistUrl, array('callbacks' => false));
-			
-		}
+		$plistFile->write($plistViewRender);
 		
 	}
 	
-	private function manifestPath() {
-		return App::pluginPath($this->plugin) . 'webroot' . DS . 'files' . DS . $this->data[$this->alias]['bundle_identifier'] . DS . basename($this->data[$this->alias]['app_name']) . '.plist';
-	}
-	
-	private function ipaPath() {
-		return App::pluginPath($this->plugin) . 'webroot' . DS . 'files' . DS . $this->data[$this->alias]['bundle_identifier'] . DS . basename($this->data[$this->alias]['app_name']) . '.ipa';
-	}
-	
-	private function ipaUrl() {
-		return Router::fullBaseUrl() . '/' . 'ipa' . '/' . pathinfo($this->ipaPath, PATHINFO_BASENAME);
-	}
-
 /*
- *  Certificate verification
+ * Path and URL methods
  *
  */
-
-//// TODO
+	
+	public function manifestPath($data = null) {
+		if (empty($data)) $data = $this->data;
+		return $this->basePath($data) . basename($data[$this->alias]['app_name']) . '.plist';
+	}
+	
+	public function manifestUrl($data = null) {
+		if (empty($data)) $data = $this->data;
+		return Router::url(array(
+			'plugin' => 'ios_distribution',
+			'controller' => 'ios_builds',
+			'action' => 'manifest',
+			'token' => $data[$this->alias]['token']
+		), true);
+	}
+	
+	public function ipaPath($data = null) {
+		if (empty($data)) $data = $this->data;
+		return $this->basePath($data) . basename($data[$this->alias]['app_name']) . '.ipa';
+	}
+	
+	public function ipaUrl($data = null) {
+		if (empty($data)) $data = $this->data;
+		return Router::url(array(
+			'plugin' => 'ios_distribution',
+			'controller' => 'ios_builds',
+			'action' => 'download',
+			$data[$this->alias]['token']
+		), true);
+	}
+	
+	protected function basePath($data = null) {
+		if (empty($data)) $data = $this->data;
+		return App::pluginPath($this->plugin) . 'files' . DS . $data[$this->alias]['bundle_identifier'] . DS . $data[$this->alias]['bundle_version'] . DS;
+	}
 
 /*
  * IPA Metadata extraction
  *
  */
-
-//// TODO
 
 	private function readMetadata($ipaPath = null) {
 		if (empty($ipaPath))
