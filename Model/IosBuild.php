@@ -72,7 +72,7 @@ class IosBuild extends IOSDistributionAppModel {
 			 	$folder = new Folder(dirname($ipaPath), true);
 			 	$ipaFile->copy($ipaPath);
 			 	
-			 	unlink($ipaTempPath);
+			 	@unlink($ipaTempPath);
 			 	
 			 	unset($this->data[$this->alias]['ipa_file']);
 		 	}
@@ -221,7 +221,7 @@ class IosBuild extends IOSDistributionAppModel {
 					    	$this->data[$this->alias]['app_name'] = $infoPlist['CFBundleDisplayName'];
 					    	$this->data[$this->alias]['icon'] = ($infoPlist['CFBundleIconFile'] != "" ? $infoPlist['CFBundleIconFile'] : ( count($infoPlist['CFBundleIconFile']) > 0 ?$infoPlist['CFBundleIconFile'][0] : null));
 					    	
-							unlink($fileTempPath);
+							@unlink($fileTempPath);
 						}
 						
 					}
