@@ -3,7 +3,6 @@
 	<fieldset>
 		<legend><?php echo __('Add Ios Build'); ?></legend>
 	<?php
-		echo $this->Form->input('title');
 		echo $this->Form->input('subtitle');
 		echo $this->Form->file('ipa_file');
 		echo $this->Form->input('plist_url');

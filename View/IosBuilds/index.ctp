@@ -24,7 +24,10 @@
 		<td><?php echo h($iosBuild['IosBuild']['bundle_identifier']); ?>&nbsp;</td>
 		<td><?php echo h($iosBuild['IosBuild']['bundle_version']); ?>&nbsp;</td>
 		<td class="actions">
-			<?php echo $this->Html->link(__('View'), array('action' => 'view', $iosBuild['IosBuild']['id'])); ?>
+			<?php echo $this->Html->link(__('View'), array(
+				'action' => 'view',
+				'token' => $iosBuild['IosBuild']['token']
+			)); ?>
 			<?php echo $this->Html->link(__('Edit'), array('action' => 'edit', $iosBuild['IosBuild']['id'])); ?>
 			<?php echo $this->Form->postLink(__('Delete'), array('action' => 'delete', $iosBuild['IosBuild']['id']), array(), __('Are you sure you want to delete # %s?', $iosBuild['IosBuild']['id'])); ?>
 		</td>
