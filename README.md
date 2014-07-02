@@ -46,3 +46,42 @@ CakePlugin::load(array(
 ```
 
 You can start uploading builds at **yourdomain.com/ios_distribution/ios_builds**
+
+Dropbox integration
+===
+
+To use Dropbox integration you need to register a new app from Dropbox developer website.
+
+https://www.dropbox.com/developers/apps
+
+- Click on the upper right button "Create new app"
+- Select "Drop-ins app"
+- Choose a valid name, then click "Create app"
+- Copy your new **app key** and add to your Cake app configuration file
+
+in **app/Config/bootstrap.php**
+```
+Configure::write('IosDistribution.Dropbox.AppKey', 'your_app_key');
+```
+
+### DropboxHelper
+
+IosDistribution provide Dropbox integration through the DropboxHelper. Here are the main methods:
+
+#### scripts( $appKey = null, $options = array() )
+
+This method let you initialize all the script needed for Dropbox app to work without manually adding it.
+
+If *$appKey* is left null, DropboxHelper will retrieve your app key in configuration **IosDistribution.Dropbox.AppKey**.
+
+```
+$this->Dropbox->scripts();
+```
+
+#### chooser( $options =  array() )
+
+This method return the code to initialize the **Dropbox Chooser**.
+You need to provide a target where to set the returned file link.
+
+**TODO:**
+- Fully configurable options, now is forced to work only with IosDistribution
