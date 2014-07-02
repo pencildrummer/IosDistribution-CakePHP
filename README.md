@@ -46,8 +46,3 @@ CakePlugin::load(array(
 ```
 
 You can start uploading builds at **yourdomain.com/ios_distribution/ios_builds**
-
-Roadmap
-===
-
-[]
