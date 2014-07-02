@@ -33,13 +33,11 @@ class IosBuildsController extends IosDistributionAppController {
  * @param string $id
  * @return void
  */
-	public function view($id = null) {
-		if (!$this->IosBuild->exists($id)) {
+	public function view($token = null) {
+		$build = $this->IosBuild->findByToken($token);
+		if (empty($build)) {
 			throw new NotFoundException(__('Invalid ios build'));
 		}
-		$options = array('conditions' => array('IosBuild.' . $this->IosBuild->primaryKey => $id));
-		$build = $this->IosBuild->find('first', $options);
-		$build['IosBuild']['profiles'] = $this->IosBuild->checkProfile($build);
 		$this->set('iosBuild', $build);
 	}
 
@@ -127,6 +125,56 @@ class IosBuildsController extends IosDistributionAppController {
 
 	 	$this->response->file($this->IosBuild->manifestPath($build));
 	 	return $this->response;
+ 	}
+
+/**
+ * profile method
+ *
+ */
+ 	public function profile($token = null) {
+	 	$build = $this->IosBuild->findByToken($token);
+	 	
+	 	$this->response->type('application/octet-stream');
+	 	$this->response->file($this->IosBuild->profilePath($build), array(
+	 		'download' => true
+	 	));
+	 	return $this->response;
+ 	} 	
+ 	
+/**
+ * add_provisioning_profile method
+ *
+ */
+ 	public function add_provisioning_profile($token) {
+	 	
+	 	$build = $this->IosBuild->findByToken($token);
+	 	
+	 	if ($this->request->is('post')) {
+		 	
+		 	if (!empty($this->request->data['provisioning_profile']) && $this->request->data['provisioning_profile']['error'] == UPLOAD_ERR_OK) {
+			 	
+			 	$profileTempFile = new File($this->request->data['provisioning_profile']['tmp_name'], true);
+			 	
+			 	$profilePath = $this->IosBuild->basePath($build) . $this->request->data['provisioning_profile']['name'];
+			 	
+			 	if ($profileTempFile->copy($profilePath)) {
+			 		
+			 		if ($this->IosBuild->checkProfile($profilePath, $build)) {
+				 		$this->Session->setFlash(__('New provisioning profile uploaded'));	
+			 		} else {
+				 		$this->Session->setFlash(__('The provisioning profile uploaded is not valid for this build!'));
+				 		@unlink($profilePath);
+			 		}
+			 		
+					$this->redirect(array('action' => 'view', 'token' => $token)); 	
+			 	}
+			 	
+		 	} else {
+			 	$this->Session->setFlash(__('Error uploading provisioning profile'));
+		 	}
+	 	}
+	 	
+	 	$this->set('iosBuild', $build);
  	}
 	
 }

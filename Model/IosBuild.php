@@ -44,7 +44,7 @@ class IosBuild extends IOSDistributionAppModel {
  * Callback implementations
  */
  
- 	public function beforeSave($options = array()) {
+ 	public function beforeValidate($options = array()) {
 	 	
 	 	$this->read();
 	 	
@@ -79,12 +79,19 @@ class IosBuild extends IOSDistributionAppModel {
 		 	
 	 	}
 	 	
+	 	return true;
+ 	}
+ 
+ 	public function beforeSave($options = array()) {
+	 	
 	 	if (empty($this->data[$this->alias]['plist_url'])) {
 			
 			$this->generateManifest();
 				
 			$this->data[$this->alias]['plist_url'] = $this->manifestUrl();
 		}
+		
+		return true;
 	 	
  	}
 	
@@ -97,34 +104,61 @@ class IosBuild extends IOSDistributionAppModel {
 	public function afterDelete() {
 		
 		App::uses('Folder', 'Utility');
-		$folder = new Folder($this->basePath());
+		$folder = new Folder($this->appPath());
 		$folder->delete();
 		
+	}
+	
+	public function afterFind($results, $primary = false) {
+		
+		// Get profiles
+		
+		if ($primary) {
+			
+			foreach ($results as &$result) {
+				
+				$result[$this->alias]['profiles'] = $this->checkProfiles($result);
+				
+			}
+			
+		}
+		
+		return $results;
 	}
 	
 /*
  * Check provision profiles
  *
  */
-
- 	public function checkProfile($data = null) {
+ 
+ 
+ 	public function getProfiles($data = null) {
+	 	if (empty($data)) $data = $this->data;
+	 	
+	 	return glob($this->basePath($data).'*.mobileprovision');
+ 	}
+ 	
+ 	public function checkProfiles($data = null) {
 	 	
 	 	if (empty($data)) $data = $this->data;
 	 	
-	 	$companyIdentifier = pathinfo($data[$this->alias]['bundle_identifier'], PATHINFO_FILENAME);
 	 	$profiles = array();
 	 	
-	 	foreach (glob($this->basePath($data).'*.mobileprovision') as $profile) {
-		 	$contents = file_get_contents($profile);
-		 	$search = strstr($contents, $companyIdentifier);
-		 	$seek = strpos($search, "</string>");
-			if ($seek!== false)
-				$profiles[substr($search, 0, $seek)] = basename($profile);
+	 	foreach ($this->getProfiles($data) as $profile) {
+			$profiles[basename($profile)] = ($this->checkProfile($profile, $data)) ? true : false;
 	 	}
 	 	
-	 	if (empty($profiles)) return false;
 	 	return $profiles;
 	 	
+ 	}
+ 	
+ 	public function checkProfile($profile, $data = null) {
+ 		if (empty($data)) $data = $this->data;
+ 		$companyIdentifier = pathinfo($data[$this->alias]['bundle_identifier'], PATHINFO_FILENAME);
+	 	$contents = file_get_contents($profile);
+	 	$search = strstr($contents, $companyIdentifier);
+	 	$seek = strpos($search, "</string>");
+	 	return ($seek!== false) ? true : false;
  	}
 
 /*
@@ -154,7 +188,7 @@ class IosBuild extends IOSDistributionAppModel {
 	
 	public function manifestPath($data = null) {
 		if (empty($data)) $data = $this->data;
-		return $this->basePath($data) . basename($data[$this->alias]['app_name']) . '.plist';
+		return $this->appPath($data) . basename($data[$this->alias]['app_name']) . '.plist';
 	}
 	
 	public function manifestUrl($data = null) {
@@ -169,7 +203,7 @@ class IosBuild extends IOSDistributionAppModel {
 	
 	public function ipaPath($data = null) {
 		if (empty($data)) $data = $this->data;
-		return $this->basePath($data) . basename($data[$this->alias]['app_name']) . '.ipa';
+		return $this->appPath($data) . basename($data[$this->alias]['app_name']) . '.ipa';
 	}
 	
 	public function ipaUrl($data = null) {
@@ -182,9 +216,22 @@ class IosBuild extends IOSDistributionAppModel {
 		), true);
 	}
 	
-	protected function basePath($data = null) {
+	public function profilePath($data = null) {
 		if (empty($data)) $data = $this->data;
-		return App::pluginPath($this->plugin) . 'files' . DS . $data[$this->alias]['bundle_identifier'] . DS . $data[$this->alias]['bundle_version'] . DS;
+		
+		$profiles = $this->getProfiles($data);
+		if (empty($profiles)) return '';
+		return $profiles[0];
+	}
+	
+	public function appPath($data = null) {
+		if (empty($data)) $data = $this->data;
+		return $this->basePath($data) . $data[$this->alias]['bundle_version'] . '_' . $data[$this->alias]['build_number'] . DS;
+	}
+	
+	public function basePath($data = null) {
+		if (empty($data)) $data = $this->data;
+		return App::pluginPath($this->plugin) . 'files' . DS . $data[$this->alias]['bundle_identifier'] . DS;
 	}
 
 /*
@@ -200,8 +247,9 @@ class IosBuild extends IOSDistributionAppModel {
 			if ($zip) {
 				while ($zip_entry = zip_read($zip)) {
 				    $fileinfo = pathinfo(zip_entry_name($zip_entry));
-				    if ($fileinfo['basename'] == "Info.plist" /*|| $fileinfo['basename'] == "iTunesArtwork"*/) {
-				    
+
+				    if ($fileinfo['basename'] == "Info.plist" && preg_match('/^Payload\/[a-zA-Z0-9 ]*\.app$/', $fileinfo['dirname'])) {
+						
 				    	$fileTempPath = TMP . basename($ipaPath) . $fileinfo['basename'];
 				    	
 						$fp = fopen($fileTempPath, "w");
@@ -216,10 +264,13 @@ class IosBuild extends IOSDistributionAppModel {
 							
 					    	$infoPlist = $infoPlist->toArray();
 							
+							$this->data[$this->alias]['title'] = $infoPlist['CFBundleDisplayName'];
 					    	$this->data[$this->alias]['bundle_identifier'] = $infoPlist['CFBundleIdentifier'];
-					    	$this->data[$this->alias]['bundle_version'] = $infoPlist['CFBundleVersion'];
+					    	$this->data[$this->alias]['bundle_version'] = $infoPlist['CFBundleShortVersionString'];
+					    	$this->data[$this->alias]['build_number'] = $infoPlist['CFBundleVersion'];
 					    	$this->data[$this->alias]['app_name'] = $infoPlist['CFBundleDisplayName'];
-					    	$this->data[$this->alias]['icon'] = ($infoPlist['CFBundleIconFile'] != "" ? $infoPlist['CFBundleIconFile'] : ( count($infoPlist['CFBundleIconFile']) > 0 ?$infoPlist['CFBundleIconFile'][0] : null));
+					    	if (!empty($infoPlist['CFBundleIconFile']))
+						    	$this->data[$this->alias]['icon'] = ($infoPlist['CFBundleIconFile'] != "" ? $infoPlist['CFBundleIconFile'] : ( count($infoPlist['CFBundleIconFile']) > 0 ?$infoPlist['CFBundleIconFile'][0] : null));
 					    	
 							@unlink($fileTempPath);
 						}
