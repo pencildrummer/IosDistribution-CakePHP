@@ -103,6 +103,20 @@ class IosBuildsController extends IosDistributionAppController {
 		return $this->redirect(array('action' => 'index'));
 	}
 	
+	public function install($token = null) {
+		
+		$build = $this->IosBuild->findByToken($token);
+		
+		if (!empty($build)) {
+			
+			$this->set('iosBuild', $build);
+			
+		} else {
+			$this->redirect(array('action' => 'index'));
+		}
+		
+	}
+	
 /**
  * download method
  *
