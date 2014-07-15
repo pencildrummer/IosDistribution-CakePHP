@@ -103,6 +103,20 @@ class IosBuildsController extends IosDistributionAppController {
 		return $this->redirect(array('action' => 'index'));
 	}
 	
+	public function install($token = null) {
+		
+		$build = $this->IosBuild->findByToken($token);
+		
+		if (!empty($build)) {
+			
+			$this->set('iosBuild', $build);
+			
+		} else {
+			$this->redirect(array('action' => 'index'));
+		}
+		
+	}
+	
 /**
  * download method
  *
@@ -111,7 +125,8 @@ class IosBuildsController extends IosDistributionAppController {
  	public function download($token = null) {
  		$build = $this->IosBuild->findByToken($token);
  		
-	 	$this->response->file($this->IosBuild->ipaPath());
+ 		$this->response->type('application/octet-stream');
+	 	$this->response->file($this->IosBuild->ipaPath($build));
 	 	return $this->response;	 	
  	}
 
@@ -122,7 +137,7 @@ class IosBuildsController extends IosDistributionAppController {
  */ 	
  	public function manifest($token = null) {
  		$build = $this->IosBuild->findByToken($token);
-
+ 		
 	 	$this->response->file($this->IosBuild->manifestPath($build));
 	 	return $this->response;
  	}

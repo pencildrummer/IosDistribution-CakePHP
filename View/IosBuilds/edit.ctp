@@ -4,9 +4,13 @@
 		<legend><?php echo __('Edit Ios Build'); ?></legend>
 	<?php
 		echo $this->Form->input('id');
-		echo $this->Form->input('title');
 		echo $this->Form->input('subtitle');
 		echo $this->Form->input('plist_url');
+		echo $this->Dropbox->chooser(array(
+			'target' => 'IosBuildPlistUrl'
+		));
+		
+		echo $this->Dropbox->scripts(null, array('inline' => false));
 	?>
 	</fieldset>
 <?php echo $this->Form->end(__('Submit')); ?>

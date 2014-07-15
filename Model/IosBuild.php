@@ -46,11 +46,15 @@ class IosBuild extends IOSDistributionAppModel {
  
  	public function beforeValidate($options = array()) {
 	 	
-	 	$this->read();
+	 	if (!empty($this->data))
+		 	$beforeData = $this->data;
+		$this->read();
+		$this->data[$this->alias] = array_merge($this->data[$this->alias], $beforeData[$this->alias]);
 	 	
 	 	// Create token
 	 	
-	 	$this->data[$this->alias]['token'] = String::uuid();
+	 	if (empty($this->data[$this->alias]['token']))
+		 	$this->data[$this->alias]['token'] = String::uuid();
 	 	
 	 	// Copy IPA
 	 	/// TODO - Async request
@@ -280,12 +284,5 @@ class IosBuild extends IOSDistributionAppModel {
 			}
 			zip_close($zip);
 	}
-
-/*
- * Dropbox implementation (for HTTPS manifest hosting)
- *
- */
-
-//// TODO
 
 }

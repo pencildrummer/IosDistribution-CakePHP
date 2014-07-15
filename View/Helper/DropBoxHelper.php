@@ -31,11 +31,16 @@ class DropboxHelper extends AppHelper {
 		$script = '
 		var button = Dropbox.createChooseButton({
 			success: function(files) {
-				document.getElementById("'.$options['target'].'").value = files[0].link;
+				// Force direct link from preview link
+				// Forcing direct link from preview link is needed
+				// because "direct" links expires after 4 hours
+				
+				var link = files[0].link.replace("//www", "//dl");
+				document.getElementById("'.$options['target'].'").value = link;
 			},
 			cancel : function() {
 			},
-			linkType : "direct",
+			linkType : "preview",
 			multiSelect : false,
 			extensions : [".plist"] 
 		});

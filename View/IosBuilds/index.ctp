@@ -3,31 +3,26 @@
 	<table cellpadding="0" cellspacing="0">
 	<thead>
 	<tr>
-			<th><?php echo $this->Paginator->sort('id'); ?></th>
 			<th><?php echo $this->Paginator->sort('title'); ?></th>
-			<th><?php echo $this->Paginator->sort('subtitle'); ?></th>
-			<th><?php echo $this->Paginator->sort('plist_url'); ?></th>
-			<th><?php echo $this->Paginator->sort('ipa_filename'); ?></th>
-			<th><?php echo $this->Paginator->sort('bundle_identifier'); ?></th>
-			<th><?php echo $this->Paginator->sort('bundle_version'); ?></th>
 			<th class="actions"><?php echo __('Actions'); ?></th>
 	</tr>
 	</thead>
 	<tbody>
 	<?php foreach ($iosBuilds as $iosBuild): ?>
 	<tr>
-		<td><?php echo h($iosBuild['IosBuild']['id']); ?>&nbsp;</td>
-		<td><?php echo h($iosBuild['IosBuild']['title']); ?>&nbsp;</td>
-		<td><?php echo h($iosBuild['IosBuild']['subtitle']); ?>&nbsp;</td>
-		<td><?php echo h($iosBuild['IosBuild']['plist_url']); ?>&nbsp;</td>
-		<td><?php echo h($iosBuild['IosBuild']['ipa_filename']); ?>&nbsp;</td>
-		<td><?php echo h($iosBuild['IosBuild']['bundle_identifier']); ?>&nbsp;</td>
-		<td><?php echo h($iosBuild['IosBuild']['bundle_version']); ?>&nbsp;</td>
+		<td>
+			<h3><?php echo h($iosBuild['IosBuild']['title']);?> <small><?php echo h($iosBuild['IosBuild']['bundle_version']) . ' (' . h($iosBuild['IosBuild']['build_number']) . ')'; ?></small></h3>
+			<small><?php echo h($iosBuild['IosBuild']['bundle_identifier']); ?> &bullet; <?php echo h($iosBuild['IosBuild']['ipa_filename']); ?></small>
+			<p><?php echo h($iosBuild['IosBuild']['subtitle']); ?></p>
+		</td>
 		<td class="actions">
 			<?php echo $this->Html->link(__('View'), array(
+				'plugin' => 'ios_distribution',
+				'controller' => 'ios_builds',
 				'action' => 'view',
 				'token' => $iosBuild['IosBuild']['token']
 			)); ?>
+			<?php echo $this->Ios->link(__('Download'), $iosBuild); ?>
 			<?php echo $this->Html->link(__('Edit'), array('action' => 'edit', $iosBuild['IosBuild']['id'])); ?>
 			<?php echo $this->Form->postLink(__('Delete'), array('action' => 'delete', $iosBuild['IosBuild']['id']), array(), __('Are you sure you want to delete # %s?', $iosBuild['IosBuild']['id'])); ?>
 		</td>

@@ -1,5 +1,15 @@
 <?php
 
+	Router::connect('/ios/install/:token', array(
+		'plugin' => 'ios_distribution',
+		'controller' => 'ios_builds',
+		'action' => 'install'
+	), array(
+		'pass' => array(
+			'token'
+		)
+	));
+
 	Router::connect('/ios/manifest/:token', array(
 		'plugin' => 'ios_distribution',
 		'controller' => 'ios_builds',
